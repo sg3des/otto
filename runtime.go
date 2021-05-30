@@ -337,6 +337,20 @@ func (self *_runtime) convertCallParameter(v Value, t reflect.Type) (reflect.Val
 		return reflect.ValueOf(v), nil
 	}
 
+	{
+		var s json.Unmarshaler
+
+		if reflect.PtrTo(t).Implements(reflect.TypeOf(&s).Elem()) {
+			r := reflect.New(t)
+
+			if err := r.Interface().(json.Unmarshaler).UnmarshalJSON([]byte(v.string())); err != nil {
+				return reflect.Zero(t), fmt.Errorf("can't convert to %s as json.Unmarshaler: %s", t.String(), err.Error())
+			}
+
+			return r.Elem(), nil
+		}
+	}
+
 	if t == typeOfJSONRawMessage {
 		if d, err := json.Marshal(v.export()); err == nil {
 			return reflect.ValueOf(d), nil
